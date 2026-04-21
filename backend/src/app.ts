@@ -39,7 +39,7 @@ app.use(sessionMiddleware)
 // ── Rate limiting on auth ─────────────────────────────────────────────────────
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: env.NODE_ENV === 'development' ? 1000 : 10,
   message: { error: 'Troppi tentativi. Riprova tra 15 minuti.' },
   standardHeaders: true,
   legacyHeaders: false,

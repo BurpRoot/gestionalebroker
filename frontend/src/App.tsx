@@ -92,10 +92,12 @@ const AuthBootstrap: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const { setUser, setLoading } = useAuthStore()
 
   useEffect(() => {
+    let cancelled = false
     authApi
       .me()
-      .then((user) => setUser(user))
-      .catch(() => setLoading(false))
+      .then((data) => { if (!cancelled) setUser(data.user) })
+      .catch(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [])
 
   return <>{children}</>
