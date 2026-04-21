@@ -1,0 +1,493 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  DIREZIONE
+  OPERATORE
+  CONTABILITA
+  COLLABORATORE
+  VIEWER
+}
+
+enum CaseStatus {
+  BOZZA
+  IN_LAVORAZIONE
+  IN_ATTESA_DOCUMENTI
+  IN_ATTESA_COMPAGNIA
+  EMESSA
+  PAGATA
+  RINNOVATA
+  ANNULLATA
+}
+
+enum MovementType {
+  ENTRATA
+  USCITA
+}
+
+enum MovementCategory {
+  PREMIO_CLIENTE
+  RIMBORSO
+  PROVVIGIONE_COLLABORATORE
+  RIMESSA_COMPAGNIA
+  COSTO_OPERATIVO
+  ALTRO
+}
+
+enum PaymentBatchStatus {
+  BOZZA
+  INVIATA
+  CONFERMATA
+  PARZIALE
+}
+
+enum TaskStatus {
+  APERTO
+  IN_CORSO
+  COMPLETATO
+  ANNULLATO
+}
+
+enum TaskPriority {
+  BASSA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum DocumentType {
+  POLIZZA
+  QUIETANZA
+  CARTA_IDENTITA
+  PATENTE
+  LIBRETTO
+  CONTABILE_BONIFICO
+  RICEVUTA_POS
+  RICEVUTA_CONTANTI
+  CARTA_VERDE
+  ATTESTATO_RISCHIO
+  MODULO_PRIVACY
+  DISTINTA_PAGAMENTO
+  ALTRO
+}
+
+enum CommissionType {
+  PERCENTUALE
+  FISSO
+}
+
+enum CustomerType {
+  PERSONA_FISICA
+  PERSONA_GIURIDICA
+  DITTA_INDIVIDUALE
+}
+
+// ─── USERS ────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         UserRole  @default(OPERATORE)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  collaborator  Collaborator?
+  assignedTasks Task[]        @relation("TaskAssignee")
+  createdTasks  Task[]        @relation("TaskCreator")
+  auditLogs     AuditLog[]
+  caseEvents    CaseEvent[]
+
+  @@map("users")
+}
+
+// ─── CUSTOMERS ────────────────────────────────────────────────────────────────
+
+model Customer {
+  id            String       @id @default(cuid())
+  type          CustomerType @default(PERSONA_FISICA)
+  firstName     String?
+  lastName      String?
+  companyName   String?
+  fiscalCode    String?      @unique
+  vatNumber     String?
+  phone         String?
+  phone2        String?
+  email         String?
+  pec           String?
+  address       String?
+  city          String?
+  province      String?
+  postalCode    String?
+  country       String       @default("IT")
+  notes         String?
+  privacyConsent Boolean     @default(false)
+  isActive      Boolean      @default(true)
+  importedFromExcel Boolean  @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  vehicles Vehicle[]
+  cases    InsuranceCase[]
+
+  @@map("customers")
+}
+
+// ─── VEHICLES ─────────────────────────────────────────────────────────────────
+
+model Vehicle {
+  id           String   @id @default(cuid())
+  licensePlate String   @unique
+  brand        String?
+  model        String?
+  year         Int?
+  engineCC     Int?
+  powerKw      Int?
+  fuelType     String?
+  vin          String?
+  usage        String?
+  notes        String?
+  isActive     Boolean  @default(true)
+  importedFromExcel Boolean @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  cases InsuranceCase[]
+
+  @@map("vehicles")
+}
+
+// ─── PARTNERS ─────────────────────────────────────────────────────────────────
+
+model Partner {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  type        String   @default("compagnia")
+  code        String?
+  fiscalCode  String?
+  vatNumber   String?
+  phone       String?
+  email       String?
+  pec         String?
+  address     String?
+  city        String?
+  province    String?
+  contactName String?
+  iban        String?
+  paymentTermsDays Int?
+  notes       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cases           InsuranceCase[]
+  paymentBatches  PaymentBatch[]
+  commissionRules CollaboratorPartnerCommission[]
+
+  @@map("partners")
+}
+
+// ─── COLLABORATORS ────────────────────────────────────────────────────────────
+
+model Collaborator {
+  id                String         @id @default(cuid())
+  firstName         String
+  lastName          String
+  fiscalCode        String?        @unique
+  phone             String?
+  email             String?
+  iban              String?
+  defaultCommission Decimal?       @db.Decimal(5, 2)
+  commissionType    CommissionType @default(PERCENTUALE)
+  isActive          Boolean        @default(true)
+  notes             String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id])
+
+  cases             InsuranceCase[]
+  commissionRules   CollaboratorPartnerCommission[]
+  paymentBatchItems PaymentBatchItem[]
+
+  @@map("collaborators")
+}
+
+model CollaboratorPartnerCommission {
+  id              String         @id @default(cuid())
+  commissionValue Decimal        @db.Decimal(8, 2)
+  commissionType  CommissionType @default(PERCENTUALE)
+  productLine     String?
+
+  collaboratorId String
+  collaborator   Collaborator @relation(fields: [collaboratorId], references: [id])
+
+  partnerId String
+  partner   Partner @relation(fields: [partnerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([collaboratorId, partnerId, productLine])
+  @@map("collaborator_partner_commissions")
+}
+
+// ─── INSURANCE CASES ──────────────────────────────────────────────────────────
+
+model InsuranceCase {
+  id                          String     @id @default(cuid())
+  caseNumber                  String     @unique
+  status                      CaseStatus @default(BOZZA)
+  productLine                 String?
+  // Tipologia pratica (WAKAM, CVT, ASSIST STRAD, RINNOVO, N.POLIZZA, II SEM, ecc.)
+  caseType                    String?
+  // Finanziari
+  grossPremium                Decimal?   @db.Decimal(10, 2)
+  partnerCost                 Decimal?   @db.Decimal(10, 2)
+  additionalCosts             Decimal?   @db.Decimal(10, 2) @default(0)
+  collaboratorCommissionValue Decimal?   @db.Decimal(10, 2)
+  // Casse
+  scudieriAmount              Decimal?   @db.Decimal(10, 2) @default(0)
+  mobilityAmount              Decimal?   @db.Decimal(10, 2) @default(0)
+  // Polizza
+  effectDate                  DateTime?
+  expiryDate                  DateTime?
+  renewalDate                 DateTime?
+  paymentFrequency            String?    // annuale, semestrale, mensile
+  // Tracciabilità pagamenti
+  paymentInMethod             String?
+  paymentInReference          String?
+  paymentOutMethod            String?
+  paymentOutReference         String?
+  bankAccount                 String?
+  // Meta
+  notes                       String?
+  importedFromExcel           Boolean    @default(false)
+  excelSheetName              String?
+  excelRowRef                 String?
+  createdAt                   DateTime   @default(now())
+  updatedAt                   DateTime   @updatedAt
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  vehicleId String?
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
+
+  partnerId String?
+  partner   Partner? @relation(fields: [partnerId], references: [id])
+
+  collaboratorId String?
+  collaborator   Collaborator? @relation(fields: [collaboratorId], references: [id])
+
+  policy        Policy?
+  cashMovements CashMovement[]
+  documents     Document[]
+  events        CaseEvent[]
+  tasks         Task[]
+
+  @@map("insurance_cases")
+}
+
+// ─── POLICIES ─────────────────────────────────────────────────────────────────
+
+model Policy {
+  id           String    @id @default(cuid())
+  policyNumber String?   @unique
+  issueDate    DateTime?
+  startDate    DateTime?
+  endDate      DateTime?
+  coverageType String?
+  deductible   Decimal?  @db.Decimal(10, 2)
+  limitAmount  Decimal?  @db.Decimal(12, 2)
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  caseId String        @unique
+  case   InsuranceCase @relation(fields: [caseId], references: [id])
+
+  @@map("policies")
+}
+
+// ─── CASH ACCOUNTS ────────────────────────────────────────────────────────────
+
+model CashAccount {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  type        String   @default("cassa") // cassa, banca, pos, piattaforma
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  movements CashMovement[]
+
+  @@map("cash_accounts")
+}
+
+// ─── CASH MOVEMENTS ───────────────────────────────────────────────────────────
+
+model CashMovement {
+  id            String           @id @default(cuid())
+  type          MovementType
+  category      MovementCategory @default(ALTRO)
+  amount        Decimal          @db.Decimal(10, 2)
+  description   String
+  movementDate  DateTime         @default(now())
+  valueDate     DateTime?
+  reference     String?
+  isReconciled  Boolean          @default(false)
+  notes         String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  caseId String?
+  case   InsuranceCase? @relation(fields: [caseId], references: [id])
+
+  cashAccountId String
+  cashAccount   CashAccount @relation(fields: [cashAccountId], references: [id])
+
+  paymentBatchItemId String?
+  paymentBatchItem   PaymentBatchItem? @relation(fields: [paymentBatchItemId], references: [id])
+
+  @@map("cash_movements")
+}
+
+// ─── PAYMENT BATCHES ──────────────────────────────────────────────────────────
+
+model PaymentBatch {
+  id          String             @id @default(cuid())
+  batchNumber String             @unique
+  status      PaymentBatchStatus @default(BOZZA)
+  description String?
+  totalAmount Decimal            @db.Decimal(12, 2) @default(0)
+  sentAt      DateTime?
+  confirmedAt DateTime?
+  notes       String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  partnerId String
+  partner   Partner @relation(fields: [partnerId], references: [id])
+
+  items PaymentBatchItem[]
+
+  @@map("payment_batches")
+}
+
+model PaymentBatchItem {
+  id          String    @id @default(cuid())
+  amount      Decimal   @db.Decimal(10, 2)
+  description String?
+  isPaid      Boolean   @default(false)
+  paidAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  batchId String
+  batch   PaymentBatch @relation(fields: [batchId], references: [id])
+
+  collaboratorId String?
+  collaborator   Collaborator? @relation(fields: [collaboratorId], references: [id])
+
+  cashMovements CashMovement[]
+
+  @@map("payment_batch_items")
+}
+
+// ─── CASE EVENTS ──────────────────────────────────────────────────────────────
+
+model CaseEvent {
+  id          String   @id @default(cuid())
+  eventType   String   // STATUS_CHANGE, DOCUMENT_ADDED, NOTE_ADDED, PAYMENT_IN, PAYMENT_OUT, TASK_CREATED, IMPORT
+  description String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  caseId String
+  case   InsuranceCase @relation(fields: [caseId], references: [id])
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  @@map("case_events")
+}
+
+// ─── TASKS ────────────────────────────────────────────────────────────────────
+
+model Task {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus   @default(APERTO)
+  priority    TaskPriority @default(MEDIA)
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  caseId String?
+  case   InsuranceCase? @relation(fields: [caseId], references: [id])
+
+  assigneeId String?
+  assignee   User?   @relation("TaskAssignee", fields: [assigneeId], references: [id])
+
+  creatorId String?
+  creator   User?   @relation("TaskCreator", fields: [creatorId], references: [id])
+
+  @@map("tasks")
+}
+
+// ─── DOCUMENTS ────────────────────────────────────────────────────────────────
+
+model Document {
+  id           String       @id @default(cuid())
+  fileName     String
+  storedPath   String
+  mimeType     String
+  sizeBytes    Int
+  documentType DocumentType @default(ALTRO)
+  description  String?
+  uploadedAt   DateTime     @default(now())
+
+  caseId String
+  case   InsuranceCase @relation(fields: [caseId], references: [id])
+
+  @@map("documents")
+}
+
+// ─── AUDIT LOG ────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, IMPORT
+  entity    String
+  entityId  String?
+  oldValues Json?
+  newValues Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}

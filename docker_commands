@@ -1,0 +1,10 @@
+postgres:
+docker run -d --name postgres-broker --restart always -p 5432:5432 -e POSTGRES_USER=broker -e POSTGRES_PASSWORD=broker -e POSTGRES_DB=broker -v postgres_broker_data:/var/lib/postgresql/data postgres:16
+
+Redis:
+docker run -d --name redis-broker --restart always -p 6379:6379 -v redis_broker_data:/data redis:7 redis-server --appendonly yes
+
+
+users:
+admin@gestionalebroker.it
+Password: Admin2026!
