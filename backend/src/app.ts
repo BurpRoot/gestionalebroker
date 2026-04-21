@@ -14,7 +14,9 @@ const app = express()
 
 // ── Security ──────────────────────────────────────────────────────────────────
 app.use(helmet())
-app.set('trust proxy', 1)
+if (env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1)
+}
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 app.use(

@@ -16,10 +16,18 @@ export const authController = {
       req.session.userId = user.id
       req.session.userRole = user.role
 
+      await new Promise<void>((resolve, reject) =>
+        req.session.save((err) => (err ? reject(err) : resolve()))
+      )
+      console.log('[LOGIN] session saved | sessionID:', req.sessionID, '| userId:', req.session.userId)
+
       await prisma.auditLog.create({
         data: { action: 'LOGIN', entity: 'users', entityId: user.id, ipAddress: req.ip, userAgent: req.headers['user-agent'] },
       })
 
+      res.on('finish', () => {
+        console.log('[LOGIN] Set-Cookie sent:', res.getHeader('Set-Cookie'))
+      })
       res.json({ user })
     } catch (err) {
       next(err)

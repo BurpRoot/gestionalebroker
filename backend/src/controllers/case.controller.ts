@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from 'express'
 import { CaseStatus } from '@prisma/client'
 import { caseService } from '../services/case.service'
+import { parsePageLimit } from '../utils/pagination'
 
 export const caseController = {
   async list(req: Request, res: Response, next: NextFunction) {
-    try { res.json(await caseService.findAll(req.query as any)) } catch (err) { next(err) }
+    try { res.json(await caseService.findAll({ ...req.query, ...parsePageLimit(req.query) } as any)) } catch (err) { next(err) }
   },
 
   async getById(req: Request, res: Response, next: NextFunction) {

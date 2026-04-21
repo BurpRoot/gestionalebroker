@@ -153,7 +153,7 @@ export const importService = {
     }
 
     const importSessionId = uuidv4()
-    await redisClient.set(`import:${importSessionId}`, JSON.stringify({ rows: allRows, filename }), 'EX', 1800)
+    await redisClient.set(`import:${importSessionId}`, JSON.stringify({ rows: allRows, filename }), { EX: 1800 })
 
     return {
       importSessionId,

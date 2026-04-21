@@ -24,3 +24,10 @@ export function buildPaginationMeta(total: number, page: number, limit: number) 
 export function buildSkip(page: number, limit: number): number {
   return (page - 1) * limit
 }
+
+export function parsePageLimit(query: Record<string, any>, defaultLimit = 20): { page: number; limit: number } {
+  return {
+    page: Math.max(1, parseInt(query.page, 10) || 1),
+    limit: Math.min(200, Math.max(1, parseInt(query.limit, 10) || defaultLimit)),
+  }
+}

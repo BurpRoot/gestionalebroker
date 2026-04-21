@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express'
 import { paymentBatchService } from '../services/payment-batch.service'
+import { parsePageLimit } from '../utils/pagination'
 
 export const paymentBatchController = {
   async list(req: Request, res: Response, next: NextFunction) {
-    try { res.json(await paymentBatchService.findAll(req.query as any)) } catch (err) { next(err) }
+    try { res.json(await paymentBatchService.findAll({ ...req.query, ...parsePageLimit(req.query) } as any)) } catch (err) { next(err) }
   },
 
   async getById(req: Request, res: Response, next: NextFunction) {

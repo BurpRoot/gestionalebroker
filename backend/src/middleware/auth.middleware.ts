@@ -27,6 +27,7 @@ export const isAuthenticated = async (
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
+  console.log('[AUTH] sessionID:', req.sessionID, '| userId:', req.session?.userId, '| cookie:', req.headers.cookie)
   if (!req.session?.userId) {
     res.status(401).json({ error: 'Non autenticato' })
     return

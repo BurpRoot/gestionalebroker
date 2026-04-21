@@ -46,9 +46,11 @@ export const ConfirmModal: React.FC<{
   message: string
   confirmLabel?: string
   loading?: boolean
-}> = ({ open, onClose, onConfirm, title, message, confirmLabel = 'Conferma', loading }) => (
+  error?: string
+}> = ({ open, onClose, onConfirm, title, message, confirmLabel = 'Conferma', loading, error }) => (
   <Modal open={open} onClose={onClose} title={title} size="sm">
-    <p className="text-sm text-slate-600 mb-6">{message}</p>
+    <p className="text-sm text-slate-600 mb-4">{message}</p>
+    {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{error}</p>}
     <div className="flex justify-end gap-3">
       <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer">
         Annulla

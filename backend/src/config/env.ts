@@ -11,7 +11,10 @@ const envSchema = z.object({
 
   SESSION_SECRET: z.string().min(16),
   SESSION_MAX_AGE_MS: z.coerce.number().default(28800000),
-  SESSION_COOKIE_SECURE: z.coerce.boolean().default(false),
+  SESSION_COOKIE_SECURE: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
   SESSION_COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).default('lax'),
 
   UPLOAD_BASE_PATH: z.string().default('./uploads'),

@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express'
 import { taskService } from '../services/task.service'
+import { parsePageLimit } from '../utils/pagination'
 
 export const taskController = {
   async list(req: Request, res: Response, next: NextFunction) {
-    try { res.json(await taskService.findAll(req.query as any)) } catch (err) { next(err) }
+    try { res.json(await taskService.findAll({ ...req.query, ...parsePageLimit(req.query) } as any)) } catch (err) { next(err) }
   },
 
   async create(req: Request, res: Response, next: NextFunction) {

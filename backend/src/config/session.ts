@@ -4,7 +4,7 @@ import { redisClient } from './redis'
 import { env } from './env'
 
 export const sessionMiddleware = session({
-  store: new RedisStore({ client: redisClient as any }),
+  store: new RedisStore({ client: redisClient }),
   secret: env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,

@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express'
 import { cashService } from '../services/cash.service'
+import { parsePageLimit } from '../utils/pagination'
 
 export const cashController = {
   async listMovements(req: Request, res: Response, next: NextFunction) {
-    try { res.json(await cashService.findMovements(req.query as any)) } catch (err) { next(err) }
+    try { res.json(await cashService.findMovements({ ...req.query, ...parsePageLimit(req.query) } as any)) } catch (err) { next(err) }
   },
 
   async createMovement(req: Request, res: Response, next: NextFunction) {

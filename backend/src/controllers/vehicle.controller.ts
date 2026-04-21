@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from 'express'
 import { vehicleService } from '../services/vehicle.service'
+import { parsePageLimit } from '../utils/pagination'
 
 export const vehicleController = {
   async list(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await vehicleService.findAll(req.query as any)
+      const result = await vehicleService.findAll({ ...req.query, ...parsePageLimit(req.query) } as any)
       res.json(result)
     } catch (err) { next(err) }
   },

@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from 'express'
 import { customerService } from '../services/customer.service'
+import { parsePageLimit } from '../utils/pagination'
 
 export const customerController = {
   async list(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await customerService.findAll(req.query as any)
+      const result = await customerService.findAll({ ...req.query, ...parsePageLimit(req.query) } as any)
       res.json(result)
     } catch (err) { next(err) }
   },
@@ -33,9 +34,12 @@ export const customerController = {
 
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
-      await customerService.softDelete(req.params.id as string)
-      res.json({ message: 'Cliente disattivato' })
-    } catch (err) { next(err) }
+      await customerService.delete(req.params.id as string)
+      res.json({ message: 'Cliente eliminato' })
+    } catch (err: any) {
+      if (err.statusCode === 400) { res.status(400).json({ error: err.message }); return }
+      next(err)
+    }
   },
 
   async getCases(req: Request, res: Response, next: NextFunction) {

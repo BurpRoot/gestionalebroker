@@ -6,7 +6,7 @@ import app from './app'
 
 async function main() {
   // Connetti Redis
-  await redisClient.connect().catch(() => {})
+  await redisClient.connect()
 
   // Test DB connection
   await prisma.$connect()

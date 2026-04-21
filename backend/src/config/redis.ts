@@ -1,10 +1,7 @@
-import Redis from 'ioredis'
+import { createClient } from 'redis'
 import { env } from './env'
 
-export const redisClient = new Redis(env.REDIS_URL, {
-  lazyConnect: true,
-  maxRetriesPerRequest: 3,
-})
+export const redisClient = createClient({ url: env.REDIS_URL })
 
 redisClient.on('connect', () => {
   console.log('✅ Redis connesso')

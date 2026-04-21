@@ -62,8 +62,15 @@ export const customerService = {
     return prisma.customer.update({ where: { id }, data })
   },
 
-  async softDelete(id: string) {
-    return prisma.customer.update({ where: { id }, data: { isActive: false } })
+  async delete(id: string) {
+    const caseCount = await prisma.insuranceCase.count({ where: { customerId: id } })
+    if (caseCount > 0) {
+      const err: any = new Error('Impossibile eliminare: il cliente ha pratiche associate')
+      err.statusCode = 400
+      throw err
+    }
+    await prisma.vehicle.deleteMany({ where: { customerId: id } })
+    return prisma.customer.delete({ where: { id } })
   },
 
   async getCases(id: string, page: number, limit: number) {

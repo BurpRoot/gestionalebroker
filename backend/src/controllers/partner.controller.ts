@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express'
 import { partnerService } from '../services/partner.service'
+import { parsePageLimit } from '../utils/pagination'
 
 export const partnerController = {
   async list(req: Request, res: Response, next: NextFunction) {
-    try { res.json(await partnerService.findAll(req.query as any)) } catch (err) { next(err) }
+    try { res.json(await partnerService.findAll({ ...req.query, ...parsePageLimit(req.query) } as any)) } catch (err) { next(err) }
   },
 
   async getById(req: Request, res: Response, next: NextFunction) {

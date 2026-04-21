@@ -14,6 +14,7 @@ export const CustomersPage: React.FC = () => {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['customers', { search, page }],
@@ -25,6 +26,11 @@ export const CustomersPage: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] })
       setDeleteId(null)
+      setDeleteError(null)
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.error || 'Errore durante l\'eliminazione'
+      setDeleteError(msg)
     },
   })
 
@@ -114,12 +120,13 @@ export const CustomersPage: React.FC = () => {
 
       <ConfirmModal
         open={!!deleteId}
-        onClose={() => setDeleteId(null)}
+        onClose={() => { setDeleteId(null); setDeleteError(null) }}
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
-        title="Disattiva cliente"
-        message="Sei sicuro di voler disattivare questo cliente?"
-        confirmLabel="Disattiva"
+        title="Elimina cliente"
+        message="Sei sicuro di voler eliminare definitivamente questo cliente?"
+        confirmLabel="Elimina"
         loading={deleteMutation.isPending}
+        error={deleteError ?? undefined}
       />
     </div>
   )
